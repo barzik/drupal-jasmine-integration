@@ -1,0 +1,119 @@
+<?php
+/**
+ * @file
+ * The jasmine_integration module main page
+ *
+ * This module allows Jasmine JS testing framework to be implemented smoothly into each page of Drupal.
+ * use /manifest/manifest.json to allow tests to be run in specifics page.
+ */
+
+
+/**
+ * getting the manifest file being located at the manifest/manifest.json
+ *
+ * @return mixed object of js files or null if manifest not there
+ */
+
+function drupal_jasmine_get_manifest() {
+
+    static $manifest_object = null;
+    if(!is_null($manifest_object))
+        return $manifest_object;
+
+    $manifest_file = file_get_contents("manifest/manifest.json", true);
+
+    if($manifest_file) {
+        $manifest_object = json_decode($manifest_file);
+    }
+
+    return $manifest_object;
+}
+
+/**
+ * get the manifest file and JS directories array and decide which js directory is valid according to the manifest.
+ * @param $js array with the JS directories
+ * @return array
+ */
+
+function drupal_jasmine_filter_jasmine_test_by_manifest($js) {
+   $manifest_object = drupal_jasmine_get_manifest();
+    if($manifest_object == null) { //if no manifest file is run, all directories are valid
+		return $js;
+    }
+
+    $js_to_be_run = array();
+
+    foreach($manifest_object as $condition => $js_array) {
+        eval("\$is_path_correct = ".$condition.';');
+        if($is_path_correct == TRUE) {
+            $js_to_be_run = array_merge($js_to_be_run, $js_array->tests);
+        }
+    }
+    $js_result = array_intersect($js, $js_to_be_run);
+	return $js_result;
+
+}
+
+
+/**
+ * getting all the js test files from the module and the template
+ * all the Jasmine test cases should be in /test directories in each module and the theme
+ */
+
+function drupal_jasmine_find_all_test_js_file()  {
+
+    //getting all the javascript files from drupal_add_js
+    $js = drupal_add_js();
+    //adding the theme directory manually
+    $js[path_to_theme().'/js/js.js'] = path_to_theme().'/js/js.js';
+
+
+	
+	
+    // modifying the js array to make it directory based array.
+    $new_js_array = array();
+    foreach($js as $dir_name => $value) {
+        $new_js_array[] = dirname($dir_name);
+    }
+    $js = $new_js_array;
+	
+
+    //getting the js directory array according to the manifest.
+    $js = drupal_jasmine_filter_jasmine_test_by_manifest($js);
+
+
+    //running through all the js files in order to load them
+    foreach($js as $key => $dir_name) {
+        $dir_name = dirname($dir_name).'/js/test'; //for the drupal_add_js
+        $real_path = realpath('.').'/'.$dir_name; //for checking if the file is really there
+        if(file_exists($real_path) == TRUE) {
+            $file_list_array = scandir($real_path); //check if there are some files in the test directory
+
+            foreach ($file_list_array as $file_name) {  //running through all the links
+                if (strpos($file_name,'.js') !== false) { //if it is js file, add it
+                    drupal_add_js($dir_name.'/'.$file_name, 'file');
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * implementation of hook_init
+ */
+
+function drupal_jasmine_integration_init() {
+    /**
+     * Jasmine SA CSS and JS
+     */
+    drupal_add_css(drupal_get_path('module', 'drupal_jasmine_integration').'/js/vendor/jasmine-1.3.1/jasmine.css', 'drupal_add_css');
+    drupal_add_js(drupal_get_path('module', 'drupal_jasmine_integration').'/js/vendor/jasmine-1.3.1/jasmine.js', 'file');
+    drupal_add_js(drupal_get_path('module', 'drupal_jasmine_integration').'/js/vendor/jasmine-1.3.1/jasmine-html.js', 'file');
+    drupal_add_js(drupal_get_path('module', 'drupal_jasmine_integration').'/js/drupal_jasmine_spec_helper.js', 'file');
+
+    drupal_jasmine_find_all_test_js_file(); //loading the js file test
+
+
+
+}

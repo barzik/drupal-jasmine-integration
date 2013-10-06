@@ -1,0 +1,4 @@
+; $Id$
+name = Drupal Jasmine Integration
+description = Provides Jasmine integration
+core = 7.x
