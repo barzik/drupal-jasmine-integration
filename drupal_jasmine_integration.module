@@ -7,7 +7,65 @@
  * use /manifest/manifest.json to allow tests to be run in specifics page.
  */
 
+/**
+ * Implementation of hook_menu
+ *
+ */
+ 
+ function drupal_jasmine_integration_menu() {
 
+  $items = array();
+
+  $items['admin/settings/drupal_jasmine_integration'] = array(
+    'title' => 'Jasmine Drupal Integration module settings',
+    'description' => 'Configurtation for the phantomJS drush integration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('drupal_jasmine_admin'),
+    'access arguments' => array('administer drupal_jasmine_integration settings'),
+    'type' => MENU_NORMAL_ITEM,
+   );
+
+  return $items;
+}
+ 
+/**
+ * Building form for Jasmine Drupal Integration module settings
+ *
+ */
+ 
+function drupal_jasmine_admin() {
+  $form = array();
+
+  $form['drupal_jasmine_integration_base_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('The URL of the Drupal installation'),
+    '#default_value' => variable_get('drupal_jasmine_integration_base_url', $_SERVER['SERVER_NAME']),
+    '#size' => 20,
+    '#description' => t("PhantomJS need a URL to run properly. the URL should be defined in the host file of the system"),
+    '#required' => TRUE,
+  );
+  
+  $form['drupal_jasmine_integration_user'] = array(
+    '#type' => 'textfield',
+    '#title' => t('User name for the phantomJS'),
+    '#default_value' => variable_get('drupal_jasmine_integration_user', ''),
+    '#size' => 20,
+    '#description' => t("PhantomJS need Username for entering restricted parts in the application."),
+    '#required' => FALSE,
+  );
+  $form['drupal_jasmine_integration_password'] = array(
+    '#type' => 'textfield',
+    '#title' => t('password for the phantomJS'),
+    '#default_value' => variable_get('drupal_jasmine_integration_password', ''),
+    '#size' => 20,
+    '#description' => t("PhantomJS need Username for entering restricted parts in the application."),
+    '#required' => FALSE,
+  );
+
+  return system_settings_form($form);
+}
+
+ 
 /**
  * getting the manifest file being located at the manifest/manifest.json
  *
@@ -40,7 +98,6 @@ function drupal_jasmine_filter_jasmine_test_by_manifest($js) {
     if($manifest_object == null) { //if no manifest file is run, all directories are valid
 		return $js;
     }
-
     $js_to_be_run = array();
 
     foreach($manifest_object as $condition => $js_array) {
@@ -65,11 +122,7 @@ function drupal_jasmine_find_all_test_js_file()  {
     //getting all the javascript files from drupal_add_js
     $js = drupal_add_js();
     //adding the theme directory manually
-    $js[path_to_theme().'/js/js.js'] = path_to_theme().'/js/js.js';
-
-
-	
-	
+    $js[path_to_theme().'/js/js.js'] = path_to_theme().'/js/js.js';	
     // modifying the js array to make it directory based array.
     $new_js_array = array();
     foreach($js as $dir_name => $value) {
@@ -77,10 +130,8 @@ function drupal_jasmine_find_all_test_js_file()  {
     }
     $js = $new_js_array;
 	
-
     //getting the js directory array according to the manifest.
     $js = drupal_jasmine_filter_jasmine_test_by_manifest($js);
-
 
     //running through all the js files in order to load them
     foreach($js as $key => $dir_name) {
@@ -111,9 +162,6 @@ function drupal_jasmine_integration_init() {
     drupal_add_js(drupal_get_path('module', 'drupal_jasmine_integration').'/js/vendor/jasmine-1.3.1/jasmine.js', 'file');
     drupal_add_js(drupal_get_path('module', 'drupal_jasmine_integration').'/js/vendor/jasmine-1.3.1/jasmine-html.js', 'file');
     drupal_add_js(drupal_get_path('module', 'drupal_jasmine_integration').'/js/drupal_jasmine_spec_helper.js', 'file');
-
-    drupal_jasmine_find_all_test_js_file(); //loading the js file test
-
-
+    drupal_jasmine_find_all_test_js_file(); //loading the js file tests
 
 }
