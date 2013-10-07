@@ -1,6 +1,10 @@
 {
     "drupal_is_front_page()":
     {"tests":["sites/all/modules/drupal_jasmine_integration/js"],
-    "url":"/",
+    "url":"",
     "registered":0},
+	"drupal_is_front_page()":
+    {"tests":["sites/all/modules/drupal_jasmine_integration/js"],
+    "url":"",
+    "registered":1}
 }
