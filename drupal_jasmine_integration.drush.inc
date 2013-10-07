@@ -56,9 +56,10 @@ function drupal_run_jasmine_drush_callback() {
     }
 
     //Creating several variables that I will use later on
-    $phantom_session_file = file_directory_path().'/phantom_session_key.txt';
-    $drupal_url = variable_get('', ''); //@TODO: add here method to get base url for phantom
-    $drupal_admin = variable_get('', ''); //@TODO: add here method to get admin session for phantom
+    $phantom_session_file = variable_get('file_' . file_default_scheme() . '_path', conf_path() . '/files').'/phantom_session_key.txt';
+    $drupal_url = variable_get('drupal_jasmine_integration_base_url', '');
+    $drupal_admin_name = variable_get('drupal_jasmine_integration_user', '');
+	$drupal_admin_password = variable_get('drupal_jasmine_integration_password', '');
     $jasmine_integration_module_path = drupal_get_path('module', 'drupal_jasmine_integration');
 
     //getting the manifest. we need it to know what URL to load
@@ -72,7 +73,7 @@ function drupal_run_jasmine_drush_callback() {
 
     /** deleting and creating the session. and than run all the tests that need log in */
     drupal_jasmine_integration_delete_session($phantom_session_file);
-    drupal_jasmine_integration_create_session($phantom_session_file, $jasmine_integration_module_path, $drupal_url,$drupal_admin);
+    drupal_jasmine_integration_create_session($phantom_session_file, $jasmine_integration_module_path, $drupal_url, $drupal_admin_name , $drupal_admin_password);
     drush_print("Running tests for logged-in users");
     drupal_jasmine_integration_run_all_tests(TRUE, $jasmine_integration_module_path, $manifest_object, $drupal_url,$phantom_session_file);
 
@@ -96,9 +97,12 @@ function drupal_jasmine_integration_delete_session($phantom_session_file) {
  * @param $drupal_admin
  */
 
-function drupal_jasmine_integration_create_session($phantom_session_file, $jasmine_integration_module_path, $drupal_url,$drupal_admin) {
+function   drupal_jasmine_integration_create_session($phantom_session_file, $jasmine_integration_module_path, $drupal_url, $drupal_admin_name , $drupal_admin_password) {
+	if($drupal_admin_name == '' || $drupal_admin_password == '') {
+		drush_die('No user name or password defined. exiting', 1);
+	}
     drush_print('Generating new admin session file');
-    $session_creation = sprintf("phantomjs --cookies-file=%s %s/js/drupal_jasmine_get_admin_cookie.js %s",$phantom_session_file, $jasmine_integration_module_path, $drupal_url, $drupal_admin);
+    $session_creation = sprintf("phantomjs --cookies-file=%s %s/js/drupal_jasmine_get_admin_cookie.js %s %s %s",$phantom_session_file, $jasmine_integration_module_path, $drupal_url, $drupal_admin_name, $drupal_admin_password);
     $session_creation_result = exec($session_creation, $output, $status);
     if($status == 0) {
         drush_print($session_creation_result);
